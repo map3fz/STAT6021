@@ -1,0 +1,115 @@
+---
+title: 'STAT 6021: Guided Question Set 6'
+author: "Michael Puchalski"
+date: "2025-02-25"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(GGally)
+Data<-read.table("nfl.txt", header=TRUE)
+```
+
+#### 1
+
+```{r}
+ggpairs(Data)
+```
+
+##### (a)
+
+Based on the correlation output, rushing yards, passing yards, TO ratio, rush%, and rush yards allowed have some sort of linear relation to the number of wins. On the other hand, it seems that yards/punt, FG%, Penalty yards, and pass yards allowed are weakly correlated and likely have little to no linear relation with wins.
+
+##### (b)
+
+Rushing yards and TO dif, Rushing% and TO dif, rushing% and rush yards allowed, and rushing% and rushing yards
+
+##### (c)
+
+-   TO differential - the more often you take the ball away, the more possessions you get a chance to score while taking a scoring opportunity away from the other team, likely increasing your chances of winning
+
+-   Rush yards allowed - rush yards allowed often can relate to time of possession since most of those allowed yards will not be chunk plays, but instead plays that eat up time, allow the opposing defense to rest, and wears out your defense. This likely has a negative relation with wins
+
+-   rushing percentage - This may have a linear relation to TO differential, based on the reality of a passing play being inherently more dangerous with respect to turnovers, but it also will have an influence over the amount of net negative plays, with an increased rushing percentage resulting in likely an increase in negative plays and overall a positive relation with wins. (I would choose this over rush yards, because total rush yards can still be influenced by explosive runs, but does not show the whole story as far as reducing turnover risk).
+
+#### 2
+
+MLR for wins against Passing Yards, rush%, and rush yards allowed.
+
+```{r}
+result<-lm(y~x2+x7+x8, data=Data)
+summary(result)
+```
+
+-   estimated regression equation : y = -1.808 + 0.003598(x2) + 0.193960(x7) - 0.004816(x8)
+
+#### 3.
+
+Estimated coefficient for x7 means that for each percent change, there is a positive correlation to wins by a multiplier of 0.193960 wins without the influence of other predictors.
+
+#### 4.
+
+```{r}
+newdata<-data.frame(x2=2000, x7=48, x8=2350)
+predict(result, newdata, level = 0.95, interval="prediction")
+```
+
+They are fitted to win a total of 3.38 games - meaning 3 games - with the potential to win as few as 1-2 games while potentially winning 5 games in a 14 game season.
+
+#### 5.
+
+Null hypothesis: B1=B2=B3=0 Alternative: at least one of the coefficients is not 0
+
+F stat is 29.44 on 3 and 24 degrees of freedom with a p-value of 3.234 x 10\^-8.
+
+R squared is 0.7863 mean about 78.6% of the variance is described by the predictors we chose.
+
+The p-value of each coefficient is below 0.05 so we reject the null hypothesis and support that this model should include all of these coefficients.
+
+```{r}
+qf(1-.05, 3, 24)
+```
+
+Here, along with the support form the given p-value from the summary, the F-statistic supports we should reject the null since 29.44 \> 3.008787 and stat that this is a useful regression model with the given coefficients.
+
+#### 6.
+
+the t-stat for x7 is 2.198. The relevant critical value for this statistic is :
+
+```{r}
+qt(1-0.05/2, 24)
+```
+
+Based on the t-test for specifically x7, the t-value 2.198 is greater than 2.063... so it it is statistically significant.
+
+#### 7.
+
+```{r}
+plot(result)
+```
+
+I would say that there could be some adjustment made to the vertical variance that could allow for it to meet assumption 2, or maybe adding another predictor. However, in order to remedy this model, we will need to shift the linear model so that the response variables are all positive.
+
+```{r}
+library(MASS)
+ MASS::boxcox(result)
+```
+
+#### 8.
+
+```{r}
+result1<-lm(y~x1+x2+x7+x8, data=Data)
+summary(result1)
+```
+
+```{r}
+par(mfrow = c(2, 2))
+plot(result1)
+```
+
+```{r}
+qt(1-0.05/2, 24)
+```
+
+The t-test for x1 shows to be much greater than .05, meaning we can accept the null that this model does not need rushing yards to be an effective linear model. However, this does not mean it does not have a linear relationship with the response variable. So I completely disagree with this statement.

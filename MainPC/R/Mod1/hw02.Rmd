@@ -1,0 +1,140 @@
+---
+title: "Module 2 Homework"
+author: "Michael Puchalski"
+date: "2025-02-02"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+police_df<-read.csv("PoliceKillings.csv", header = TRUE)
+election_df<-read.csv("State_pop_election.csv", header =TRUE)
+covid_df<-read.csv("stateCovid.csv", header =TRUE)
+```
+
+## Question 1a
+Using the raceethnicity variable, create a table and a bar chart that displays the proportions of victims in each race / ethnic level. Also, use your table and bar chart in conjunction with the US Census Bureau July 1 2024 estimates to explain what your data reveal.
+
+```{r}
+#police_df$raceethnicity<-factor(police_df$raceethnicity, levels=c("White", "Black", "Hispanic/Latino", "Unknown", "Asian/Pacific Islander", "Native American"))
+#table(police_df$raceethnicity)
+
+race_df<-police_df%>%
+  mutate(raceethnicity = as.character(raceethnicity))%>%
+  group_by(raceethnicity)%>%
+  summarize(Counts=n())%>%
+  mutate(proportion = Counts/nrow(police_df))
+race_df
+
+# ggplot(police_df, aes(x = raceethnicity))+
+  # geom_bar() +
+  # theme(axis.text.x = element_text(angle = 90),
+    # plot.title = element_text(hjust=0.5))+
+  # labs(x="Race and Ethnicicty", y = "Number Killed", title = "Cop Killings by Race and Ethnicicty")
+
+ggplot(race_df, aes(x = raceethnicity, y = proportion))+
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 90),
+    plot.title = element_text(hjust=0.5))+
+  labs(x="Race and Ethnicicty", y = "Proportion Killed", title = "Cop Killings by Race and Ethnicicty")
+```
+
+## Question 1b
+Convert the variable age, the age of the victim, to be numeric, and call this new variable age.num. Use the is.numeric() function to confirm that the newly created variable is numeric (and output the result), and add this new variable to your data frame.
+
+```{r}
+police_df_clean<-police_df%>%
+  drop_na(age)%>%
+  mutate(age.num = as.numeric(age))
+is.numeric(police_df_clean$age.num)
+head(police_df_clean, n=6)
+```
+
+## Question 1c
+Create a density plot of the variable age.num. Comment on this density plot
+
+```{r}
+ggplot(police_df_clean, aes(x=age.num))+
+  geom_density()+
+  theme(axis.text.x = element_text(angle = 0),
+    plot.title = element_text(hjust=0.5))+
+  labs(x="Age", y = "Density", title = "Cop Killings Density by Age")
+  
+```
+
+We can see looking at the density plot that there is a bell curve type scale where you see a higher concentration of cop killings happen towards what would be considered middle ages with it decreasing as the groupings get older. 
+
+## Question 1d
+Create a visualization to compare the ages of victims across the different race / ethnicity levels. Comment on the visualization
+
+```{r}
+ggplot(police_df_clean, aes(x=raceethnicity, y=age.num, fill=raceethnicity))+
+  geom_boxplot()+
+  theme(axis.text.x = element_text(size =6, angle = 90),
+        plot.title = element_text(size = 10, hjust = 0.5),
+        legend.position = "none")+
+  labs(x = "Race and Ethnicity", y = "Age", title = "Comparison of Victims' Ages Across Race and Ethnicity")
+```
+
+From this visualization you can show that the overall spread of age density changes across racer and ethnicity with Native American Deaths being significantly more concentrated towards the lower age groups compared to other ethnicities while white victims are the largest spread with them having the great aged outliers. Meanwhile, outside of outliers of Black and Hispanic/Latino groups, they are highly concentrated between about 25 and 30 years of age.
+
+## Question 1e
+Create a visualization to compare the different causes of death (variable cause) across the different race / ethnicity levels. Comment on this visualization, specif-
+ically on whether the cause of death appears to be independent of the victim’s race / ethnicity.
+
+```{r}
+mytab2<-table(police_df_clean$raceethnicity, police_df_clean$cause)
+print("Table 1. Cause Counts")
+mytab2
+print("Table. 2 Percentage of Cause per Race and Ethnicity")
+round(prop.table(mytab2,1)*100, 2)
+print("Table 3. Percentage of Cause across Race and Ethnicity")
+round(prop.table(mytab2,2)*100, 2)
+```
+
+In this table figure, you can see both the total number of death by cause and race/ethnicity in table 1. In tables 2 and 3, you can see the percentage of the total deaths each cause has across the groups followed by the percentage of each cause each enthnic group makes up respectively.
+
+When interpreting this, the table with the most story to tell is Table 3 where it shows that black victims make up a disproportionate amount of deaths while in custody compared to the other groups and almost half of the deaths from tazing. Meanwhile white victims make up over half of all gunshot victims and victims who die by vehicle strike.
+
+When combining this data with the data from table 2, one can see that the majority of all cop killings are a result of gunshots, while black vicitims make up a concerning amount of death cases that could be resulting from police brutality via death in 
+custody and tasing.
+
+## Question 1f
+Pick at least two variables from the dataset and create a suitable visualization of the variables. Comment on what the visualization reveals. You may create new variables based on existing variables, and decribe how you created the new variables.
+
+```{r}
+armed_df<-police_df_clean%>%
+  drop_na(armed)%>%
+  drop_na(state)%>%
+  group_by(state, armed)
+armed_df
+
+ggplot(armed_df, aes(x=state, fill = armed))+
+  geom_bar() +
+  theme(axis.text.x = element_text(size =5, angle = 90),
+        plot.title = element_text(size = 10, hjust = 0.5),
+        legend.text = element_text(size = 6))+
+  labs(x = "Armed Status", y = "Count", fill = "armed", title = "Armed Cop Killing victims by count")
+       
+```
+The armed victims had two high spiking States, one with stricter gun/weapon laws in California, meanwhile Texas with more lenient laws towards weapons has be come the second largest producer of weapon related police killings. This suggests that this type of statistic can be heavily influenced when batched together due to these two states also being the largest populations in the United States.
+
+
+# Question 2a
+```{r}
+election_df <- election_df %>%
+  rename("state" = "State")
+
+merge_df <- covid_df%>%
+  inner_join(election_df, by = c("state"))
+head(merge_df, n=6 )
+```
+
+# Question 2b
+```{r}
+ggplot(merge_df, aes(x = Population, y = deaths))+
+  geom_point()+
+  labs(title = "State Covid Death Across State Population")
+```
+
+Looking at this visualization image for State covid deaths, the size of the population of a state absolutely influenced its covid death count. This is why in a point chart, just as you would expect from an epidemiological background, the Population and the Death count are almost linear in relation. 

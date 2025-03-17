@@ -1,0 +1,49 @@
+---
+title: "HW Module 5"
+author: "Michael Puchalski"
+date: "2025-02-17"
+output: pdf_document
+---
+
+#### 1. (R required) For this question, you will use the dataset “Copier.txt” for this question.This is the same data set that you used in the last homework. The Tri-City Office Equipment Corporation sells an imported copier on a franchise basis and performs preventive maintenance and repair service on this copier. The data have been collected from 45 recent calls on users to perform routine preventive maintenance service; for each call, Serviced is the number of copiers serviced and Minutes is the total number of minutes spent by the service person.
+
+#### It is hypothesized that the total time spent by the service person can be predicted using the number of copiers serviced. Fit an appropriate linear regression and answer the following questions:
+
+```{r}
+library(tidyverse)
+data <- read.table("copier.txt", header=TRUE , sep="")
+
+mylm <- lm(Minutes~Serviced, data=data)
+
+ggplot(data, aes(x=Serviced,y=Minutes))+
+  geom_point()+
+  geom_smooth(method = "lm", se = TRUE, level=0.95)+
+  labs(x="Serviced", y="Minutes", title="Service Time by Number of Machines Serviced")
+```
+
+Shown above is a scatterplot fitted with an appropriate linear regression fitted as well as the 95% confidence interval shaded in grey.
+
+#### (a) Obtain the 95% confidence interval for the slope, B1.
+
+```{r}
+summary(mylm)
+```
+
+```{r}
+confint(mylm, level=0.95)
+```
+
+Here the confidence interval for the slope, indicated in the Serviced row, falls between the lower bound of 14.061 and 16.009 Minutes. This means it is expected that 95% of the time, the average time to fix a copier should be essentially between 14 and 16 minutes with the predicted mean being 15.035 minutes.
+
+#### (b) Suppose a service person is sent to service 5 copiers. Obtain an appropriate 95% interval that predicts the total service time spent by the service person.
+
+```{r}
+new_copiers <- data.frame(Serviced=5)
+predict(mylm, new_copiers, level=0.95, interval="confidence")
+```
+
+The predicted time is 74.596 minutes, at just under an hour and 15 with a corresponding confidence interval of (71.914, 77.280)mins to be spent on servicing the 5 copiers.
+
+#### (c) What is the value of the residual for the first observation? Interpret this value contextually.
+
+The value of the residual in the first observation is 8.914 on 43 degrees of freedom. This is a low residual value, meaning the extraneous variance not described by the model is low suggesting the model does a fairly good job modeling the relationship between copiers serviced and total service time.

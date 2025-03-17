@@ -1,0 +1,95 @@
+---
+title: "Guided 4"
+author: "Michael Puchalski"
+date: "2025-02-11"
+output: pdf_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r}
+library(tidyverse)
+library(palmerpenguins)
+df<-penguins
+```
+
+### 1. Gentoo Plot of body mass against flipper length
+
+```{r}
+gentoo<-df%>%
+  filter(species == "Gentoo")
+
+ggplot(gentoo, aes(x=flipper_length_mm, y=body_mass_g))+
+  geom_point()+
+  labs(x="Flipper Length (mm)", y="Body Mass (g)", title = "Gentoo Body Mass against Flipper Length")
+
+result<-lm(body_mass_g~flipper_length_mm, data = gentoo)
+result
+```
+
+estimated linear eqaution: y = 54.62(x) - 6787.28
+
+### Question 2
+
+```{r}
+confint(result, level = 0.95)[2,]
+```
+
+The change in body mass is predicted to be a chnage of 54.62 grams per
+mm, The CI where the mean for change per mm will fall between these
+values 95% of the time is 44.667 and 64.577.
+
+## Question 3
+
+Hypothesis testing
+
+```{r}
+summary(result)
+```
+
+Null Hypothesis: H0 = 0; alternate Ha does not equal 0 **p-value** is
+very small 2.2 to the -16 power because the p value is so small, the
+null should be rejected because it suggest that weight is predicted
+rather well by wing length
+
+## Question 4
+
+Yes, in terms of grams in comparison to an animal weighed in kilograms,
+the variance of 20 grams that can be found in the confidence interval is
+a very miniscule difference.
+
+## Question 5
+
+```{r}
+new_flip<- data.frame(flipper_length_mm = 200)
+prediction<- predict(result, newdata = new_flip, interval = "confidence", level = 0.95)
+prediction
+```
+
+Here the predicted weight in grams is 4137.22 with the mean having a 95%
+CI of 3954.446 to 4319.993 grams
+
+## Question 6
+
+```{r}
+prediction1<- predict(result, newdata = new_flip, interval = "prediction", level = 0.95)
+prediction1
+```
+
+Lower bound is 3401.121 and upper bound is 4873.319
+
+## Question 7
+
+```{r}
+t_stat<- (54.623 - 50)/5.028
+
+t_stat
+
+p_value<- pt(.919, df = 121)
+p_value
+```
+
+Null Hypothesis: B1 = 50 Alternative Hypothesis: B1 \> 50 test_stat =
+0.919 p-value = 0.1798 The p-value is greater than 0.05 meaning we don't
+the null hypothesis in favor of our alternative hypothesis

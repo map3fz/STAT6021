@@ -1,0 +1,39 @@
+---
+title: 'STAT 6021: Homework Set 6'
+author: "Michael Puchalski"
+date: "2025-03-03"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(datasets)
+library(GGally)
+df<-swiss
+```
+
+#### 1.
+
+For this first question, you will use the dataset swiss which is part of the datasets\
+package. Load the data. For more information about the data set, type ?swiss. The\
+goal of the data set was to assess how fertility rates in the Swiss (French-speaking)\
+provinces relate to a number of demographic variables.
+
+##### (a). Create a scatterplot matrix and find the correlation between all pairs of variables for this data set. Then determine which predictors appear to be linearly related to fertility and if any of the predictors are highly correlated with one another.
+
+```{r}
+ggpairs(df, progress = FALSE)
+```
+
+It appears that fertility and infant mortality have the most linear relationship while agriculture, examination, and education could be adjusted to reach the assumptions of a linear model. Along with that, based on the high correlation, along with other socioeconomic background prior knowledge, education and examination could potentially be related enough to where you do not need both in the model. Education is also highly correlated with agriculture, as is examination. Some how, Religious influence, catholic, is also correlated with some of the other variables such as examination and agriculture.
+
+##### (b). Fit a multiple linear regression
+
+```{r}
+result<- lm(Fertility~., data=df)
+summary(result)
+```
+
+In this scenario, the F-statistic is testing for whether or not at least one of the coefficients is not 0 meaning that at least one of the coefficients has a linear relation with the response variable. In this context, the F-stat and corresponding p-value suggest that we would reject the null hypothesis, supporting that at least one of these coefficients has a linear relationship with the response variable.
+
+This supports what I suggested in section a as Education and Infant Mortality seem to have a linear relationship with the response variable as long as the listed coefficients remain true. Along with this, education and agriculture have surprisingly low magnitude coefficients, which if they were included without other predictors, then they may be higher. They may be needed for the model to remain relevant, but this is something we won't know without running further tests such as a t-test.

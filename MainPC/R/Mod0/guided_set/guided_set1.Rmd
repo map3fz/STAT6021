@@ -1,0 +1,129 @@
+---
+title: "guided_set1"
+author: "Michael"
+date: "2025-01-21"
+output: html_document
+---
+
+Author: Michael Puchalski
+Title: guided_module1
+Date:1/21/2025
+```{r}
+library(dplyr)
+Data<-read.table("students.txt", header=TRUE)
+Data
+```
+
+## Question 1:
+Looking at the variables above, is there a variable that will definitely not be part of
+any meaningful analysis? If yes, which one, and remove this variable from your data
+frame.
+```{r}
+Data <- Data%>%
+  select(-Student)
+Data
+```
+
+The variable from the students.txt file that is not useful for analysis is the 
+student ID number.
+
+## Question 2:
+How many Students are in the Data Set?
+```{r}
+row_n <- Data %>% summarise(count = n())
+row_n
+```
+Although this answer can be seen by checking the Row number in the table, being able to do so when not possible could be useful as shown above.
+
+## Question 3:
+How many students have a missing entry in at least one of the columns?
+```{r}
+na_count <- Data%>%
+  rowwise() %>%
+  mutate(has_null = any(is.na(across()))) %>% # scans across all the columns per row for an na value by grouping them
+  ungroup() %>% # makes it ungrouped and countable
+  summarise(count = sum(has_null))
+  na_count
+```
+
+12 undefined value students
+
+## Question 4:
+ 4. Report the median values of the numeric variables.
+```{r}
+median_values <- Data %>%
+  summarize(across(c(GPA, PartyNum, DaysBeer, StudyHrs), ~ median(., na.rm = TRUE))) # shorthand for a calculate median function where the . represents column and the ~ makes the function apply the function to each column in the across function
+median_values
+```
+
+## Question 5:
+Report the mean and standard deviation of StudyHrs for female and male students.
+ Based on these values, comment on what you can glean about time spent studying
+ between female and male students
+
+```{r}
+grouped_Stdy <- Data %>%
+  group_by(Gender) %>%
+  summarise(mean(StudyHrs))
+grouped_Stdy
+```
+```{r}
+grouped_Stdy <- Data %>%
+  group_by(Gender) %>%
+  summarise(sd(StudyHrs))
+grouped_Stdy
+```
+
+Based on the output of the grouped male and female study hours, female students average just shy of 1hr more of studying per week than male students. Along with this, the high end of the male students, study a little longer. The impact this extra hour could have, may be seen on a grouped analysis of GPA.
+
+## Question 6:
+Create a new variable called PartyAnimal, which takes on the value “yes” if PartyNum
+ the student parties a lot (more than 8 days a month), and “no” otherwise.
+```{r}
+Data <- Data %>%
+  mutate(PartyAnimal=ifelse(PartyNum>8, "yes", "no"))
+knitr::kable(head(Data, n = 5))
+```
+
+## Question 7:
+Create a new variable called GPA.cat, which takes on the following values
+ “low” if GPA is less than 3.0
+ “moderate” if GPA is less than 3.5 and at least 3.0
+ “high” if GPA is at least 3.5
+ 
+```{r}
+Data <- Data %>%
+  mutate(GPA.cat=case_when(GPA <3.0 ~ "low",
+                              GPA >=3.0 & GPA<3.5 ~ "moderate",
+                              GPA >= 3.5 ~ "high"))
+knitr::kable(head(Data, n = 5))
+
+table(Data$GPA.cat)
+
+```
+
+## Question 8:
+ Suppose we want to focus on students who have low GPAs (below 3.0), party a lot
+ (more than 8 days a month), and study little (less than 15 hours a week). Create a
+ data frame that contains these students. How many such students are there?
+```{r}
+unfocused <- Data %>%
+  filter(GPA < 3.0, PartyNum >8, StudyHrs < 15)
+unfocused
+```
+```{r}
+num_unfocused <- nrow(unfocused)
+num_unfocused
+```
+ 29 students will fall under the criteria of unfocused.
+ 
+## Question 9:
+ Add the variables PartyAnimal and GPA.cat to the data frame from part 1, and export
+ it as a .csv file. Name the file new_students.csv. We will be using this data file for
+ the next module.
+
+```{r}
+write.csv(Data, "new_students.csv", row.names = FALSE)
+```
+
+

@@ -1,0 +1,158 @@
+---
+title: 'Stat 6021: Homework Set 5'
+author: "Michael Puchalski"
+date: "2025-02-24"
+output: pdf_document
+---
+
+Set up
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(faraway)
+```
+
+```{r}
+Data = cornnit
+```
+
+#### 1(a)
+
+The response variable for this study is the corn yield at bushels per acre with the predictor being the nitrogen at pounds per acre.
+
+```{r}
+ggplot2::ggplot(Data, aes(x=nitrogen, y=yield))+
+  geom_point()+
+  geom_smooth(method = "lm", se=FALSE)+
+  labs(x="Nitrogen lbs/acre", y="Corn bushels/acre", title="Scatterplot of Corn Bushels against Pounds of Fertilizer per Acre")
+```
+
+Looking at this plot, this looks like it does not going to fall evenly on both sides of a line nor does it seem like the vertical spread is completely constant as you move from left to right violating both assumption 1 and assumption 2.
+
+#### 1(b)
+
+```{r}
+result<-lm(yield~nitrogen, data=Data)
+par(mfrow = c(2,2))
+plot(result)
+```
+
+Based on the residuals plot, the red line that is fitted to the average value of the residuals for differing values along the x-axis is curved indicating the current model is not reasonable. Specifically the curvature indicates assumption 1 is violated. For assumption 2, the vertical spread of the residuals appears to be close to, but not completely constant as the move from left to right occurs.
+
+Based on this finding, we should first attempt to address the vertical variance (assumption 2) via a lambda greater than 1 because we see a decrease in variance as we go from left to right. To address this, we will look at a boxcox plot with the ideal being that we can do a logarithmic normalization.
+
+#### 1(c)
+
+```{r}
+library(MASS)
+MASS::boxcox(result, lambda= seq(1,3,1/10))
+```
+
+Here, I am going to choose to set lambda equal to 2 for general ease of use with it falling within the 95% CI range. This means that I am going to transform the y at a factor of log base 2. This plot aids in guiding transformation by giving a range of values in which the log modifier should fall between.
+
+#### 1(d)
+
+```{r}
+ystar<-log2(Data$yield)
+Data<- data.frame(Data,ystar)
+result.ystar<-lm(ystar~nitrogen, data=Data)
+par(mfrow=c(2,2))
+plot(result.ystar)
+```
+
+Based on the resulting residual plot from the initial log base 2 transformation, it appears the variance has been more normalized; however, the curvature of the residual plot still implies that we need to still adjust for assumption 1. This means we will need to transform it in such a way, that we preserve the changes made to address assumption 2.
+
+```{r}
+ggplot2::ggplot(data=Data, aes(x=nitrogen, y=ystar))+
+  geom_point()+
+  geom_smooth(method=lm, se=FALSE)
+```
+
+Based on the shape of the log2 of y against nitrogen, this is either shaped as an upside down parabola, square root, or log(x). Based on the preference of the log transformation for maintaining the integrity of the interpretation of the model, that is the first transformation that will be attempted.
+
+```{r}
+result2<-lm(ystar~nitrogen, data=Data)
+MASS::boxcox(result2)
+```
+
+```{r}
+xstar<-log2(Data$nitrogen)
+Data<- data.frame(Data,xstar)
+Data
+# result.xstar<-lm(ystar~xstar, data=Data)
+# par(mfrow=c(2,2))
+# plot(result.xstar)
+```
+
+xstar row instead gains a -Inf value if this is given it will not allow for a plot, so instead some other transformations should be attempted.
+
+```{r}
+xstar.1<-sqrt(Data$nitrogen)
+Data<- data.frame(Data,xstar.1)
+result.xstar<-lm(ystar~xstar.1, data=Data)
+par(mfrow=c(2,2))
+plot(result.xstar)
+```
+
+Following this transformation, you see variance maintained, and a very close return close to the mean, but still not flat in the residual plot. Along with this, the QQ-residuals plot suggests a form of normal distribution, but there still appears to be some work to be done as some values fall heavily off the main line in the plot.
+
+```{r}
+ggplot2::ggplot(data=Data, aes(x=xstar.1, y=ystar))+
+  geom_point()+
+  geom_smooth(method=lm, se=FALSE)
+```
+
+Following that analysis, it can then also be confirmed that this still does not correct the model to fit assumption 1 as the data is still overestimated or underestimated by the line on the right side of the plot. Following this, I will test a negative square due to plot appear to potentially have a negative parabola shap.
+
+```{r}
+xstar.2<-(Data$nitrogen)^2
+Data<- data.frame(Data,xstar.2)
+result.xstar.2<-lm(ystar~xstar.2, data=Data)
+par(mfrow=c(2,2))
+plot(result.xstar.2)
+```
+
+```{r}
+ggplot2::ggplot(data=Data, aes(x=xstar.2, y=ystar))+
+  geom_point()+
+  geom_smooth(method=lm, se=FALSE)
+```
+
+... Yeah, so that was wrong and made a worse model. Instead, it seems my first attempt would have been correct and instead I need to compensate for the values of nitrogen that equal 0 in the data frame.
+
+```{r}
+nitrogen_adjusted<-Data$nitrogen+abs(min(Data$nitrogen)+1)
+xstar.3<-log2(nitrogen_adjusted)
+Data<- data.frame(Data,xstar.3)
+result.xstar.3<-lm(ystar~xstar.3, data=Data)
+par(mfrow=c(2,2))
+plot(result.xstar.3)
+```
+
+```{r}
+ggplot2::ggplot(data=Data, aes(x=xstar.3, y=ystar))+
+  geom_point()+
+  geom_smooth(method=lm, se=FALSE)+
+  labs(x="Log2, adjusted for zeros, of Nitrogen lbs/acre", y="Log2 of corn yield per acre", title="Log2 of Corn Yield against the adjusted Log2 of Fertilizer Used")
+```
+
+Following this transformation, the values maintained an equal variance along either side of the regression model, however, the distribution along the x-axis of the scatterplot and on the residual plot is incredibly changed with it populating more towards the right side of the x-axis. In this model **x*= log2(x+abs(min(x))+1), something that needed to be done to compensate for the presence of 0's as values for nitrogen. Along with that*** *y*=log2(y). The Model for this is:
+
+```{r}
+lm(formula = ystar~xstar.3, data=Data)
+```
+
+In this Interpretation, for a 1% increase in the pounds of nitrogen increased, you see a 0.09577% increase in the yield of bushels of corn. *This analysis feels rocky at best, and I feel like there is a better way to state this.*
+
+#### 2(a)
+
+Based on Figure 1, I would advise we adjust the response variable first for vertical variance. This is because based on the residual plot, even with the values appearing mostly up and down, their mean still lies at zero due to the variance of the response variable. This goes along with the general rule that the response variable should be adjusted for first, before you adjust the predictor variable.
+
+#### 2(b)
+
+I agree with my classmate. With lambda of 0 falling inside of the boxcox interval, applying the log is a valid option, and is a strong one as a log transformation maintains the integrity of the model when using it for things such as prediction and hypothesis testing.
+
+#### 2(c)
+
+The formula of this model would be y-hat\* = 1.507892 - 0.44993x*, where y\**=log(y[the Concentration of the Solution]) and x = time. This can be interpreted as the concentration starts at a value of 1.507892, and decreasing at a rate of (1.01)\^0.44993 per 1% increase of time. This is better interpreted as the concentration decreasing by 0.44993% per 1% increase in time it spends in the solution.

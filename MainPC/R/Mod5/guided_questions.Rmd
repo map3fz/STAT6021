@@ -1,0 +1,50 @@
+---
+title: "Guided Question Set 5"
+author: "Michael Puchalski"
+date: "2025-02-18"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+```
+
+
+```{r}
+df<- MASS :: mammals
+
+ggplot(df, aes(x=body, y=brain))+
+  geom_point()+
+  labs(x="Body Weight", y="Brain Weight", title="Brain Weight against Body Weight")
+```
+
+It appears assumption 2 is violated with the points clustered at one end of the plot. Without a fitted line assumption 1 is not easily visualized.
+
+```{r}
+ggplot(df, aes(x=body, y=brain))+
+  geom_point()+
+   geom_smooth(method="lm", se = FALSE)+
+  labs(x="Body Weight", y="Brain Weight", title="Brain Weight against Body Weight") 
+
+
+```
+
+```{r}
+result<-lm(brain~body, data=df, drop.unused.levels = TRUE)
+par(mfrow = c(2,2))
+plot(result)
+```
+
+When interpreting variance, think about it also as the distance from the mean which should be at a horizontal axis, on the residual plot.
+
+Based on the residual plot, it appears that assumption 2 is definitely violated, and assumption 1 is possibly violated as well based on the slight "curve", that is more like an angle for the extreme values.
+
+### Question 3.
+
+Based on the previous assumptions, we should compensate by transforming the response variable first to stabilize our variance. Since our variance is increasing from left to right, we should transform our response variable using y\* = y𝞴 with 𝞴 \<1. Should always be attempted with a log transformation.
+
+### Question 4.
+
+```{r}
+MASS::boxcox(result, lamda  = seq(-0.5,0.5,1/10))
+```
