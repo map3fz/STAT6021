@@ -1,0 +1,111 @@
+---
+title: "Guided Set 2"
+author: "Michael Puchalski"
+date: "2025-01-28"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+library(tidyverse)
+df<-read.csv("new_students.csv", header = TRUE)
+```
+
+
+#Question 1
+Frequency Table of the number of students in each level of GPA.cat then arrange if needed
+
+```{r}
+df$GPA.cat<- factor(df$GPA.cat, levels=c("low","moderate","high"))
+# levels(df$GPA.cat) checks the order of levels
+table(df$GPA.cat)
+```
+
+
+#Question 2
+Create a bar chart for this data
+
+```{r}
+df_clean<-df%>%
+  drop_na(GPA.cat)
+ggplot(df_clean, aes(x=GPA.cat))+
+  geom_bar() +
+  theme(axis.text.x = element_text(angle=0),
+        plot.title = element_text(hjust=0.5))+
+  labs(x="GPA Category", y = "Student Count", title = "GPA distribution")
+```
+
+#Question 3
+Create a bar chart with proportions
+```{r}
+prop_df<-df_clean%>%
+  group_by(GPA.cat)%>%
+  summarize(Counts=n())%>%
+  mutate(Percent = Counts/nrow(df_clean))
+prop_df
+ggplot(prop_df, aes(x=GPA.cat, y=Percent))+
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 0),
+        plot.title = element_text(hjust = 0.5))+
+  labs(x="GPA Category", y = "Student Proportion", title = "GPA distribution proportions")
+
+```
+
+#Question 4
+Two Way table for the number of male and female students and the GPA category
+
+```{r}
+two_way_table<-table(df_clean$Gender, df_clean$GPA.cat)
+two_way_table
+```
+
+#Question 5
+Produce a percentage table for the proportion of GPA categories
+```{r}
+round(prop.table(two_way_table, 1)*100, 2)
+round(prop.table(two_way_table, 2)*100, 2)
+```
+According to these tables it shows that females make up a larger percentage of the moderate and high GPA.categories with men making up just over half of the low GPA category. Along with this, men show to have a higher grouping in the low vs high end where the opposite is true for females.
+
+#Question 6
+make a bivariute bar chart
+```{r}
+ggplot(df_clean, aes(x = GPA.cat, fill = Gender))+
+  geom_bar(position = "fill")+
+  labs(x="GPA Category", y = "Proportion", title = "GPA by category and gender")
+```
+
+#Question 7 
+Split this further by smoker vs nonsmoker
+```{r}
+ggplot(df_clean, aes(x = GPA.cat, fill = Smoke))+
+  geom_bar(position = "fill")+
+  facet_wrap(~Gender)
+```
+
+This chart would probably be better as a count chart, but the way to give the most information is by allowing it to wrap by gender which shows that the more successful students both male and female have a lower rate of being smokers than in the lower GPA categories.That being said, it is a chart that needs context to allow it to be a proper visualization.
+
+#Question 8
+Creat GPA vs study hours scatter plot
+```{r}
+ggplot(df_clean, aes(x = StudyHrs, y = GPA))+
+  geom_point()
+```
+This chart shows that there is no guarantee of success, but that when more than 30 hours are spent studying, the lowest GPA is a 2.75. So, while increasing study hours does not guarantee an increase in GPA, studying more can correlate. Along with this, it shows that su=ome students can succeed with relatively low study hrs per week.
+
+#Question 9 
+Make the scatter plot include party days too
+```{r}
+ggplot(df_clean, aes(x = PartyNum, y = StudyHrs, color = GPA))+
+  geom_point()
+```
+
+#Question 10
+same thing plus smoking
+
+```{r}
+ggplot(df_clean, aes(x = PartyNum, y = StudyHrs, color = GPA, size = Smoke))+
+  geom_point()
+```
+
