@@ -1,0 +1,42 @@
+---
+title: "hw04"
+author: "Michael Puchalski"
+date: "2025-02-10"
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r}
+library(tidyverse,LaTeX)
+df<-read.table("copier.txt", header = TRUE)
+```
+
+# 1. (R required) We will use the dataset “Copier.txt” for this question. The Tri-City Office Equipment Corporation sells an imported copier on a franchise basis and performs preventive maintenance and repair service on this copier. The data have been collected from 45 recent calls on users to perform routine preventive maintenance service; for each call, Serviced is the number of copiers serviced and Minutes is the total number of minutes spent by the service person.
+## (a) What is the response variable in this analysis? What is predictor in this analysis?
+In this analysis the response variable is "minutes", as in the total number of minutes spent by the service person. The predictor is "Serviced", the total number of copiers serviced.
+## (b) Produce a scatterplot of the two variables. How would you describe the relationship between the number of copiers serviced and the time spent by the service person?
+```{r}
+ggplot(df, aes(x = Serviced, y = Minutes))+
+  geom_point()
+```
+I would describe this, at least qualitatively, as a positive linear relationship between copiers serviced and the time spent doing so.
+## (c) What is the correlation between the total time spent by the service person and the number of copiers serviced? Interpret this correlation contextually.
+As mentioned above, this correlates as a positive linear relationshp. This means that the more opiers there are to be serviced, the more total time that there will be spent on servicing the copiers.
+## (d) Can the correlation found in part 1c be interpreted reliably? Briefly explain.
+It can be interpreted yes, but to do so reliabley, a linear model needs to be applied to it in order to ensure that any interpretations made are done so with minimal human bias
+## (e) Use the lm() function to fit a linear regression for the two variables. Where are the values of βˆ 1, βˆ 0, R2 , and ˆσ 2 for this linear regression?
+```{r}
+lm_result<- lm(Minutes~Serviced, data = df)
+summary(lm_result)
+```
+B1 = 15.0352, B0 = -0.5802, R squared = 0.9575, sigma squared -> variance = 79.4594
+B1 comes from the Serviced Estimate, B2 comes from the Intercept Estimate, R squared is the unadjusted value from the model. Variance is the Residual standard Error squared.
+## (f) Interpret the values of βˆ 1, βˆ 0 contextually. Does the value of βˆ0 make sense in this context?
+The B1 value (the slope), describes how for every 1 machine serviced, there is an expected service time of 15 minutes. The B0 value (the y-intercept), is a negative value, however, this makes sense because there is no service time when there is no machine to be serviced.
+## (g) Use the anova() function to produce the ANOVA table for this linear regression. What is the value of the ANOVA F statistic? What null and alternative hypotheses are being tested here? What is a relevant conclusion based on this ANOVA F statistic?
+```{r}
+anova(lm_result)
+```
+The F statistic here is 968.66. The null hypothesis H0 =0, alternative ha does not equal 0. The relevant conclusion to be made here is based on the very high F statistic, the null hypothesis is rejected meaning the variance is explained more by the model than the error terms.
+
+
