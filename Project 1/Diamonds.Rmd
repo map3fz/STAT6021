@@ -1,0 +1,122 @@
+---
+title: "Diamonds"
+author: "Greg Miller"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(MASS)
+library(scales)
+data<-read.csv("diamonds4.csv", header=TRUE)
+```
+
+#Diamond prices decline or increase in alphabetical order.
+
+
+```{r}
+data <- data %>%
+  mutate(color_group = case_when(
+    color %in% c('D', 'E', 'F') ~ "Colorless",
+    color %in% c('G', 'H', 'I', 'J') ~ "Near-colorless",
+    color %in% c('K') ~ "Faint color",
+    TRUE ~ as.character(color)  # Keeps other values unchanged
+  ))
+
+data <- data %>%
+  mutate(carat_group = case_when(
+    carat < 1 ~ "< 1.00",
+    carat >= 1 & carat < 2 ~ "1.00 - 1.99",
+    carat >= 2 & carat < 3 ~ "2.00 - 2.99",
+    carat >= 3 & carat < 4 ~ "3.00 - 3.99",
+    carat >= 4 & carat < 5 ~ "4.00 - 4.99",
+    carat >= 5 ~ "5.00+"
+  ))
+
+
+```
+
+```{r}
+data %>%
+  group_by(color) %>%
+  summarise(avg_price = mean(price)) %>%
+  ggplot(aes(x = color, y = avg_price, fill = color)) +
+  scale_y_continuous(labels = dollar_format()) +  # Format as $
+  geom_col() +
+  labs(title = "Average Diamond Price by Color",
+       x = "Color",
+       y = "Average Price") +
+  theme_minimal()
+
+
+ggplot(data, aes(x = color, y = price, fill = color)) +
+  geom_boxplot() +
+  facet_wrap(~ carat_group, scales = "free_y") +  # Allow different y-scales
+  scale_y_continuous(labels = dollar_format()) +  # Format as $
+  labs(title = "Diamond Price by Color and Carat Group",
+       x = "Color",
+       y = "Price") +
+  theme_minimal()
+
+ggplot(data, aes(x = carat, y = price, color = color_group)) +
+  geom_line(stat = "summary", fun = mean, size = 1) + 
+  labs(title = "Average Diamond Price by Carat and Color Group",
+       x = "Carat",
+       y = "Price ($)",
+       color = "Color Group") +  # Legend label
+  scale_y_continuous(labels = dollar_format()) +  # Format as $
+  theme_minimal()
+```
+
+```{r}
+
+# Fit a linear model
+result <- lm(price ~ carat, data = data)
+
+# Print the summary of the model
+summary(result)
+
+# Plot price vs carat with the linear regression line
+ggplot(data, aes(x = carat, y = price)) +
+  geom_point(alpha = 0.3) +  # Plot the points
+  geom_smooth(method = "lm", se=FALSE) +  # Add the linear regression line
+  scale_y_continuous(labels = scales::dollar_format()) +  # Format y-axis as $
+  labs(title = "Linear Model: Price vs. Carat",
+       x = "Carat",
+       y = "Price ($)") 
+```
+
+
+```{r}
+boxcox(result)
+MASS::boxcox(result, lambda = seq(0, 4, 1/10)) 
+```
+
+```{r}
+data <- data %>%
+  mutate(log_carat = log(carat),
+         log_price = log(price))
+
+# Fit a new linear model with log-transformed carat and price
+lm_model_log_both <- lm(log_price ~ log_carat, data = data)
+
+# Print the summary of the new model
+summary(lm_model_log_both)
+
+# Plot the log-transformed carat vs. log-transformed price with the new linear regression line
+ggplot(data, aes(x = log_carat, y = log_price)) +
+  geom_point(alpha = 0.3) +  # Plot the points
+  geom_smooth(method = "lm", color = "red", size = 1, se = FALSE) +  # Linear regression line
+  labs(title = "Linear Model: Log(Price) vs. Log(Carat)",
+       x = "Log(Carat)",
+       y = "Log(Price)") +
+  theme_minimal()
+
+
+par(mfrow=c(2,2))
+plot(lm_model_log_both)
+```
+```

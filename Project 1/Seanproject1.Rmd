@@ -1,0 +1,145 @@
+---
+title: "Project 1"
+author: "Sean Hersee"
+date: "2025-03-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+library(tidyverse)
+library(MASS)
+data<-read.csv('diamonds4.csv')
+```
+
+# Claims:  
+1) Cut is the most important factor in determining diamond quality  
+  -Higher cut quality will make for much more expensive diamonds  
+    Ranking:  
+    Ideal: Top 3%  
+    Very Good: Top 15%  
+    Good : Top 25%  
+2) Color is the 2nd most important characteristic  
+  -colorless (higher color grading) will be more expensive  
+     -scale in data set goes from D (colorless) to K (faintly colored)  
+3) Clarity is an important but not most impactful factor  
+  -Scale runs from slightly included to flawless  
+4) Carat is the weight of the diamond, not the size  
+  -Carat will have a positive linear relationship with price, but is not an important factor when considering the  
+  impact of cut and shape  
+
+
+## Price against Carat Linear Regression
+
+##### Step 1: Simple Linear Regression & Plot
+```{r}
+slr<-lm(data$price~data$carat,data=data)
+ggplot2::ggplot(data, aes(x=carat, y=price))+
+  geom_point()+
+  geom_smooth(method=lm)+
+  labs(x="Carat Weight",y="Price",title="Scatterplot of Sales Price against Carat Weight")
+par(mfrow = c(2, 2))
+plot(slr)
+```
+
+Assumption 1 is not met: Points are not evenly scattered on either side of the line on the scatterplot  
+Assumption 2 is not met: The average value of residuals (red) line on the Residuals Plot is not along the horizontal  
+axis 0 and the vertical spread of the data points varies as we move left to right on the chart
+
+##### Step 2: Determine Transformation of the response variable
+```{r}
+MASS::boxcox(slr, lambda = seq(-.1, .4, 1/10))
+```
+
+Although Lambda of 0 is not within the bounds of the confidence interval, I will choose a Lambda of 0 as that will allow
+for a log transformation which will lead to comprehensible results
+
+##### Step #3: Apply Log to Response Variable and view results
+```{r}
+ystar<-log(data$price)
+data<-data.frame(data,ystar)
+slr.trans1<-lm(ystar~carat,data=data)
+ggplot2::ggplot(data, aes(x=carat, y=ystar))+
+  geom_point()+
+  geom_smooth(method=lm)+
+  labs(x="Carat Weight",y="Price",title="Scatterplot of Sales Price against Carat Weight")
+par(mfrow = c(2, 2))
+plot(slr.trans1)
+```
+
+These results appear logarithmic annd indicate that the predictor variable also needs to be transformed using a log
+transformation
+
+##### Step #4: Apply Log to the Predictor and view results
+```{r}
+xstar<-log(data$carat)
+data<-data.frame(data,xstar)
+slr.trans2<-lm(ystar~xstar,data=data)
+ggplot2::ggplot(data, aes(x=xstar, y=ystar))+
+  geom_point()+
+  geom_smooth(method=lm)+
+  labs(x="Carat Weight",y="Price",title="Scatterplot of Sales Price against Carat Weight")
+par(mfrow = c(2, 2))
+plot(slr.trans2)
+```
+
+This has resulted in a useful data set where all assumptions of linear regressions are met
+
+
+#Cut to Price across multiple carat intervals (0.5, 1.0, 1.5, 2.0)
+```{r}
+data<-data %>% 
+  mutate(carat.group=cut(x=data$carat,breaks=c(quantile(data$carat,probs = seq(0, 1, by =0.25),include.lowest=TRUE))))
+data$cut<-factor(data$cut,levels=c("Good","Very Good","Ideal","Astor Ideal"))
+
+#data<-data %>% 
+#  mutate(carat.group=cut(x=data$carat,breaks=c(0.2,.5,1,1.5,2,Inf)))
+#data$cut<-factor(data$cut,levels=c("Good","Very Good","Ideal","Astor Ideal"))
+
+ggplot(data,aes(x=carat))+
+  geom_histogram()+
+  xlim(0,2.5)
+
+ggplot(data,aes(x=cut,y=price))+
+  geom_violin()+
+  ylim(0,7500)
+
+ggplot(data,aes(x=cut,y=ystar))+
+  geom_violin()+
+  facet_wrap(~carat.group)
+
+ggplot(data,aes(x=xstar,y=ystar,fill=cut))+
+  geom_point(shape=21,alpha=.7)
+
+```
+
+
+```{r}
+data.sub<-data %>% 
+  filter(carat<1.4)
+
+data.sub<-data.sub %>% 
+  mutate(carat.group=cut(x=data.sub$carat,breaks=c(0.2,.6,1,1.4)))
+data.sub$cut<-factor(data.sub$cut,levels=c("Good","Very Good","Ideal","Astor Ideal"))
+
+ggplot(data.sub,aes(x=cut,y=ystar))+
+  geom_violin()+
+  facet_wrap(~carat.group)
+
+ggplot(data.sub,aes(x=carat,y=ystar,fill=cut))+
+  geom_point(shape=23,alpha=.6)
+
+ggplot(data.sub,aes(x=cut,y=ystar))+
+  geom_jitter()+
+  facet_wrap(~carat.group)
+
+ggplot(data.sub,aes(x=cut,y=ystar))+
+  geom_boxplot()+
+  facet_wrap(~carat.group)
+
+```
+
+

@@ -1,0 +1,137 @@
+---
+title: "Project 1 Visualizations"
+author: "Michael Puchalski"
+date: "2025-03-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(GGally)
+library(MASS)
+options(scipen = 999)
+diamonds<-read.csv("diamonds4.csv")
+```
+
+## Linear Model Work
+
+Price against carat
+
+```{r}
+result<-lm(price~carat, data=diamonds)
+ggplot(data = diamonds, aes(x=carat, y=price))+
+  geom_point()
+```
+
+```{r}
+ggplot(data = diamonds, aes(x=carat, y=price))+
+  geom_point()+
+  geom_smooth(method='lm', se=T)
+```
+
+Here, you can see an uneven distribution across the y-axis, as well as a shotgun effect as x increases.
+
+```{r}
+plot(result)
+```
+
+Along with this, the residuals plot is not at all equally distributed, showing this model has a lot of room for improvement to resolve for assumption 1 as well as assumption 2 to work on the linearity as well as the variance. This is also supported by the QQ plot and the scale-location plot.
+
+To address this, we will first check the potential for adjusting the model utilizing a box cox plot to determine what values could be used to normalize the function.
+
+```{r}
+boxcox(result, lambda=seq(0.2,0.4,0.05))
+```
+
+Based on the outcomes of the box cox plot, we will need to modify the y values with a 𝜆 =0.30 with it falling within the 95% CI of the log likelihood.
+
+```{r}
+#y-adjustment, why not use logtrans function from MASS?
+ystar<-logb(diamonds$price, base=exp(0.30))
+diamonds.ystar<-data.frame(diamonds, ystar)
+result.logb.ystar<-lm(ystar~carat, data = diamonds.ystar)
+plot(result.logb.ystar)
+```
+
+After modifying by a log of base 0.30, our residual plot has much more even distribution vertically suggesting the modification to address assumption 2 of a linear model, constant variance, was at least for the most part successful. So now, we need to address assumption 1, to address the curvature of the residual plot to normalize the errors of this model.
+
+```{r}
+ggplot2::ggplot(data=diamonds.ystar,aes(x=carat,y=ystar))+
+ geom_point()
+```
+
+We can make an assumption based on the shape of the scatter plot post y adjustment, that the x values should also be modified. This shape suggests that x should be modified by either a log(x), or the square root of x.
+
+```{r}
+xstar<-log(diamonds.ystar$carat)
+diamonds.adjusted<-data.frame(diamonds.ystar, xstar)
+result.adjusted<-lm(ystar~xstar, data=diamonds.adjusted)
+plot(result.adjusted)
+```
+
+```{r Linear Model, message=FALSE, warning=FALSE}
+ggplot2::ggplot(data=diamonds.adjusted,aes(x=xstar,y=ystar))+
+ geom_point()+
+ geom_smooth(method=lm,se=FALSE)
+```
+
+### Clarity binning and visualization
+
+```{r}
+clarity_bin<-diamonds%>%
+  group_by(clarity)%>%
+  summarize(across(price, list(
+    mean = mean,
+    median =median,
+    min=min,
+    max=max,
+    sd=sd,
+    count=~n()
+  )))
+clarity_bin
+```
+
+```{r}
+long_clarity_bin<- clarity_bin%>%
+  rename(occurrence = price_count)%>%
+  pivot_longer(cols= c(price_mean, price_median, price_sd, price_min, price_max, occurrence),
+               names_to = "Statistic", values_to = "Price")
+long_clarity_bin
+```
+
+```{r}
+ggplot(long_clarity_bin, aes(x = clarity, y = Price, fill = Statistic))+
+  geom_bar(stat = "identity", position="dodge")
+```
+
+```{r}
+ggplot(long_clarity_bin, aes(x = clarity, y = Price, fill = Statistic))+
+  geom_bar(stat = "identity", position="stack")
+```
+
+```{r}
+ggplot(long_clarity_bin, aes(x = clarity, y = Price, fill = Statistic))+
+  geom_bar(stat = "identity", position="fill")
+```
+
+```{r}
+ggplot(long_clarity_bin, aes(x = clarity, y = occurrence))+
+  geom_jitter()
+```
+
+```{r}
+ggplot(long_clarity_bin, aes(x = clarity, y = Price))+
+  geom_boxplot()
+```
+
+```{r}
+relative_rarity<-clarity_bin%>%
+  group_by(price_count)
+relative_rarity
+```
+
+```{r}
+ggplot(relative_rarity, aes(x = price_count, y = price_mean))+
+  geom_bar()+
+  ylim(0,30000)
+```
