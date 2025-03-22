@@ -3,3 +3,201 @@ title: "ProjectPlots"
 output: html_document
 ---
 
+```{r}
+library(tidyverse)
+library(MASS)
+library(scales)
+data<-read.csv('diamonds4.csv')
+```
+
+### Simple linear regression: Price against Carat
+
+Pulled from Sean's work for consistency. Plots consistent with the work from a log base 0.3 modification. Will follow the progress of Sean's regression model.
+
+```{r}
+slr<-lm(data$price~data$carat,data=data)
+ggplot2::ggplot(data, aes(x=carat, y=price))+
+  geom_point()+
+  geom_smooth(method=lm)+
+  labs(x="Carat Weight",y="Price",title="Scatterplot of Sales Price against Carat Weight")
+par(mfrow = c(2, 2))
+plot(slr)
+```
+
+Assumption 1 is not met: Points are not evenly scattered on either side of the line on the scatterplot\
+Assumption 2 is not met: The average value of residuals (red) line on the Residuals Plot is not along the horizontal\
+axis 0 and the vertical spread of the data points varies as we move left to right on the chart
+
+##### Transformation of response variable
+
+```{r}
+MASS::boxcox(slr, lambda = seq(-.1, .4, 1/10))
+```
+
+Utilizing a natural log as it is common practice to round down for more effective interpretation if it is possible to round down to 0 in the confidence interval values.
+
+```{r}
+ystar<-log(data$price)
+data<-data.frame(data,ystar)
+slr.trans1<-lm(ystar~carat,data=data)
+ggplot2::ggplot(data, aes(x=carat, y=ystar))+
+  geom_point()+
+  geom_smooth(method=lm)+
+  labs(x="Carat Weight",y="Price",title="Scatterplot of Sales Price against Carat Weight")
+par(mfrow = c(2, 2))
+plot(slr.trans1)
+```
+
+Predictor variable now needs to be normalized via a logarithmic transformation as well to meet assumption 1.
+
+```{r}
+xstar<-log(data$carat)
+data<-data.frame(data,xstar)
+slr.trans2<-lm(ystar~xstar,data=data)
+ggplot2::ggplot(data, aes(x=xstar, y=ystar))+
+  geom_point()+
+  geom_smooth(method=lm)+
+  labs(x="Carat Weight",y="Price",title="Scatterplot of Sales Price against Carat Weight")
+par(mfrow = c(2, 2))
+plot(slr.trans2)
+```
+
+```{r}
+data<-data %>% # used to make binning of data more uniform, from Greg
+  mutate(clarity_group = case_when(
+    clarity %in% c('I1', 'I2', 'I3')~"Included Diamonds",
+    clarity %in% c('SI1', 'SI2')~"Slightly Included Diamonds",
+    clarity %in% c('VS1', 'VS2')~"Very Slightly Included Diamonds",
+    clarity %in% c('VVS1', 'VVS2')~"Very, Very Slightly Included Diamonds",
+    clarity %in% c('IF')~"Internally Flawless Diamonds",
+    clarity %in% c('FL')~"Flawless Diamonds",
+    TRUE ~ as.character(clarity)
+  ))
+data<- data %>% # pulled from code format from Greg's data manipulation
+  mutate(carat_group = case_when(
+    carat < 1 ~ "< 1.00",
+    carat >= 1 & carat < 2 ~ "1.00 - 1.99",
+    carat >= 2 & carat < 3 ~ "2.00 - 2.99",
+    carat >= 3 & carat < 4 ~ "3.00 - 3.99",
+    carat >= 4 & carat < 5 ~ "4.00 - 4.99",
+    carat >= 5 ~ "5.00+"
+  ))
+```
+
+```{r}
+# Plot formatting incorporating personal work with formatting suggestions from Sean and Greg
+data %>%
+  group_by(clarity) %>%
+  summarise(avg_price = mean(price)) %>%
+  ggplot(aes(x = factor(clarity, levels = c("FL", "IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1")), y = avg_price, fill = clarity)) +
+  scale_y_continuous(labels = dollar_format()) +  # Format as $
+  geom_col() +
+  geom_text(aes(label = dollar_format()(avg_price)), 
+          vjust = -0.3,  # Position text slightly above bars
+          size = 3) +    # Adjust text size
+  labs(title = "Average Diamond Price by Clarity",
+       x = "Clarity",
+       y = "Average Price") +
+  theme_minimal()
+
+ggplot(data, aes(x = clarity, y = price, fill = clarity)) +
+  geom_boxplot() +
+  facet_wrap(~ carat_group, scales = "free_y") +  # Allow different y-scales
+  scale_y_continuous(labels = dollar_format()) +  # Format as $
+  labs(title = "Diamond Price by Clarity and Carat Group",
+       x = "Clarity",
+       y = "Price") +
+  theme_minimal()
+
+ggplot(data, aes(x = carat, y = ystar, color = clarity_group)) +
+  geom_line(stat = "summary", fun = mean, size = 1) + 
+  labs(title = "Average Diamond Price by Carat and Clarity Group",
+       x = "Carat",
+       y = "Price ($)",
+       color = "Clarity Group") +  # Legend label
+  scale_y_continuous(labels = dollar_format()) +  # Format as $
+  theme_minimal()
+```
+
+### Cut to Clarity
+
+```{r}
+data<-data %>% 
+  mutate(carat.group=cut(x=carat,breaks= unique(c(quantile(data$carat,probs = seq(0, 1, by =0.25),include.lowest=TRUE)))))%>%
+  mutate(carat.group = coalesce(as.character(carat.group), "Other"))
+data$cut<-factor(data$cut,levels=c("Good","Very Good","Ideal","Astor Ideal"))
+
+# ggplot(data,aes(x=clarity_group))+
+ # geom_histogram()+
+  # xlim(0,2.5)
+
+ggplot(data,aes(x=xstar,y=price))+
+  geom_violin()+
+  facet_wrap(~clarity_group)
+
+
+ggplot(data,aes(x=xstar,y=ystar,fill=clarity_group))+
+  geom_point(shape=21,alpha=.7)
+```
+
+```{r}
+ggplot(data,aes(x=carat.group, fill=color))+
+  geom_bar(alpha = 0.7, position = "stack") + # Default stacked bar behavior
+  geom_text(stat = "count", aes(label = ..count..), 
+            position = position_stack(vjust = 0.5), # Center labels within blocks
+            size = 3)+
+  facet_wrap(~clarity_group)
+  
+```
+
+```{r}
+# Get unique facets (clarity_group levels) 
+facets <- unique(data$clarity_group)
+
+# Create a plot for each facet
+for (facet in facets) {
+  # Filter data for the current facet
+  facet_data <- data %>% filter(clarity_group == facet)
+  
+  # Create the plot
+  p <- ggplot(facet_data, aes(x = carat_group, fill = color)) +
+    geom_bar(alpha = 0.7, position = "stack") +
+    geom_text(stat = "count", aes(label = ..count..), 
+              position = position_stack(vjust = 0.5),
+              size = 3) +
+    labs(title = paste("Clarity Group:", facet), x = "Carat Group", y = "Count")
+  print(p)
+}
+```
+
+```{r}
+for (facet in facets) {
+  # Filter data for the current facet
+  facet_data <- data %>% filter(clarity_group == facet)
+  
+  # Create the plot
+  q <- ggplot(facet_data, aes(x = carat.group, fill = color)) +
+    geom_bar(alpha = 0.7, position = "stack") +
+    geom_text(stat = "count", aes(label = ..count..), 
+              position = position_stack(vjust = 0.5),
+              size = 4,          # Increase text size
+              color = "white",   # Use white text for contrast (adjust if needed)
+              fontface = "bold") +  # Make text bold
+    labs(title = paste("Clarity Group:", facet), 
+         x = "Carat Group", 
+         y = "Count") +
+    theme_bw() +  # A clean theme for better readability
+    theme(
+      plot.title   = element_text(size = 16, face = "bold"),
+      axis.text.x  = element_text(size = 12),
+      axis.text.y  = element_text(size = 12)
+    )
+  
+  # Print the plot to display it in your plotting window
+  print(q)
+}
+```
+
+```{r}
+print(data$carat.group)
+```
