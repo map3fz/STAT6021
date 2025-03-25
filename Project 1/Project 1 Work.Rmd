@@ -78,7 +78,7 @@ ggplot2::ggplot(data=diamonds.adjusted,aes(x=xstar,y=ystar))+
 ### Clarity binning and visualization
 
 ```{r}
-clarity_bin<-diamonds%>%
+clarity_bin<-diamonds.adjusted%>%
   group_by(clarity)%>%
   summarize(across(price, list(
     mean = mean,
@@ -95,12 +95,12 @@ clarity_bin
 long_clarity_bin<- clarity_bin%>%
   rename(occurrence = price_count)%>%
   pivot_longer(cols= c(price_mean, price_median, price_sd, price_min, price_max, occurrence),
-               names_to = "Statistic", values_to = "Price")
+               names_to = "Statistic", values_to = "ystar")
 long_clarity_bin
 ```
 
 ```{r}
-ggplot(long_clarity_bin, aes(x = clarity, y = Price, fill = Statistic))+
+ggplot(long_clarity_bin, aes(x = clarity, y = ystar, fill = Statistic))+
   geom_bar(stat = "identity", position="dodge")
 ```
 
