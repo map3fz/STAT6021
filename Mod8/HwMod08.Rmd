@@ -1,0 +1,45 @@
+---
+title: "HwMod08"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+library(MASS)
+library(tidyverse)
+library(lawstat)
+data<-birthwt
+weight<-birthwt
+weight$race <- factor(weight$race,
+                       levels = c(1, 2, 3),
+                       labels = c("White", "Black", "Other"))
+```
+
+### 1(a)
+
+```{r}
+ggplot(weight, aes(x=age,y=bwt, color=race))+
+  geom_point()+
+  geom_smooth(method=lm, se=FALSE)+
+  labs(x="Age",
+  y="Body Weight",
+  title="Body Weight by Race")
+```
+
+You can see an interaction effect, after cleaning the data where it can appropriately compare data. This effect is noticeable because of the differing lines of fit with different slopes dependent on race.
+
+### 1(b)
+
+```{r}
+contrasts(weight$race)
+complete_data <- birthwt[complete.cases(birthwt$bwt, birthwt$age, birthwt$race), ]
+table(complete_data$race)
+```
+
+```{r}
+model <- lm(bwt ~ age * race, data = weight)
+summary(model)
+```
+
+In this equation it shows that based on the race, there is a different interaction. The interaction term shows age has a differing effect across the different racial categories. It also suggests there is a weaker positive relationship between age and birth weight across the different non-White racial groups. Particularly, there is a significant negative interaction for black mothers and their babies body weight in relation to age with a slope of -62.54, lower than the reference slope of 21.37.
