@@ -98,3 +98,4 @@ R2
 ```
 Values are close suggesting the model is a decent generalization of the model where we will likely not suffer from overfitting because it is smaller the R2 as expected, but not greatly so.
 
+trying to Commit
