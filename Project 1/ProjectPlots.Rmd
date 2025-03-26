@@ -65,7 +65,6 @@ plot(slr.trans2)
 ```{r}
 data<-data %>% # used to make binning of data more uniform, from Greg
   mutate(clarity_group = case_when(
-    clarity %in% c('I1', 'I2', 'I3')~"Included Diamonds",
     clarity %in% c('SI1', 'SI2')~"Slightly Included Diamonds",
     clarity %in% c('VS1', 'VS2')~"Very Slightly Included Diamonds",
     clarity %in% c('VVS1', 'VVS2')~"Very, Very Slightly Included Diamonds",
@@ -110,7 +109,7 @@ ggplot(data, aes(x = clarity, y = price, fill = clarity)) +
   theme_minimal()
 
 ggplot(data, aes(x = carat, y = ystar, color = clarity_group)) +
-  geom_line(stat = "summary", fun = mean, size = 1) + 
+  geom_line(stat = "summary", fun = mean, linewidth = 1) + 
   labs(title = "Average Diamond Price by Carat and Clarity Group",
        x = "Carat",
        y = "Price ($)",
@@ -136,8 +135,12 @@ ggplot(data,aes(x=xstar,y=price))+
   facet_wrap(~clarity_group)
 
 
-ggplot(data,aes(x=xstar,y=ystar,fill=clarity_group))+
+ggplot(data,aes(x=xstar,y=av,fill=clarity_group))+
   geom_point(shape=21,alpha=.7)
+```
+
+```{r}
+alpha_values <- c("SI2" = .2, "SI1" = 0.4, "VS2" = 0.5, "VS1" = 0.6, "VVS2" = 0.7, "VVS1" = 0.8, "IF" = 0.9, "FL" = 1)
 ```
 
 ```{r}
@@ -147,7 +150,20 @@ ggplot(data,aes(x=carat.group, fill=color))+
             position = position_stack(vjust = 0.5), # Center labels within blocks
             size = 3)+
   facet_wrap(~clarity_group)
-  
+
+data %>%
+  group_by(clarity) %>%
+  summarise(avg_price = mean(price, na.rm = TRUE)) %>%
+  ggplot(aes(x = factor(clarity, levels = names(alpha_values)), 
+             y = avg_price, alpha = factor(clarity, levels = names(alpha_values)))) +
+  geom_col(fill = "dodgerblue4") +
+  scale_alpha_manual(values = alpha_values) +  
+  scale_y_continuous(labels = dollar_format()) +
+  labs(title = "Average Diamond Price by Clarity",
+       x = "Clarity",
+       y = "Average Price",
+       alpha = "Clarity") +  # Proper legend title
+  theme_minimal()  
 ```
 
 ```{r}
@@ -159,10 +175,10 @@ for (facet in facets) {
   # Filter data for the current facet
   facet_data <- data %>% filter(clarity_group == facet)
   
-  # Create the plot
-  p <- ggplot(facet_data, aes(x = carat_group, fill = color)) +
+  # Creating the plots
+  p <- ggplot(facet_data, aes(x = carat_group, fill = cut)) +
     geom_bar(alpha = 0.7, position = "stack") +
-    geom_text(stat = "count", aes(label = ..count..), 
+    geom_text(stat = "count", aes(label = after_stat(count)), 
               position = position_stack(vjust = 0.5),
               size = 3) +
     labs(title = paste("Clarity Group:", facet), x = "Carat Group", y = "Count")
@@ -201,3 +217,39 @@ for (facet in facets) {
 ```{r}
 print(data$carat.group)
 ```
+
+```{r}
+data %>%
+  group_by(clarity) %>%
+  summarise(avg_price = mean(price)) %>%
+  ggplot(aes(x = factor(clarity, levels = c("FL", "IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1")), y = avg_price, fill = clarity)) +
+  scale_y_continuous(labels = dollar_format()) +  # Format as $
+  geom_col(fill="dodgerblue4") +
+  geom_text(aes(label = dollar_format()(avg_price)), 
+          vjust = -0.3,  # Position text slightly above bars
+          size = 3) +    # Adjust text size
+  labs(title = "Average Diamond Price by Clarity",
+       x = "Clarity",
+       y = "Average Price") +
+  theme_minimal()
+
+ggplot(data, aes(x = clarity, y =, fill = carat_group)) +
+  geom_boxplot() +
+  facet_wrap(~ cut, scales = "free_y") +  # Allow different y-scales
+  scale_y_continuous(labels = dollar_format()) +  # Format as $
+  labs(title = "Diamond Price by Clarity and Carat Group",
+       x = "Clarity",
+       y = "Price") +
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 8))  # Rotate x-axis labels
+
+ggplot(data, aes(x = carat, y = ystar, color = clarity_group)) +
+  geom_line(stat = "summary", fun = mean, size = 1) + 
+  labs(title = "Average Diamond Price by Carat and Clarity Group",
+       x = "Carat",
+       y = "Price ($)",
+       color = "Clarity Group") +  # Legend label
+  scale_y_continuous(labels = dollar_format()) +  # Format as $
+  theme_minimal()
+```
+

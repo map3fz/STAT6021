@@ -1,0 +1,100 @@
+---
+title: "Guided Set Mod 9"
+author: "Michael Puchalski"
+date: "2025-03-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(leaps)
+Data<- read.table("nfl.txt", header=T)
+```
+
+### 1.
+
+```{r}
+allreg<-regsubsets(y ~., data=Data, nbest=2)
+summary(allreg)
+```
+Based on R2, best model for 1-predictors is that with x8 as the 1-predictor with the second best being that with x1.
+```{r}
+names(summary(allreg))
+```
+
+
+```{r}
+which.max(summary(allreg)$adjr2)
+```
+```{r}
+which.min(summary(allreg)$cp)
+```
+
+```{r}
+which.min(summary(allreg)$bic)
+```
+
+### 2 forward elimination
+```{r}
+#intercept only model
+regnull<-lm(y~1, data=Data)
+# all predictors
+regfull<-lm(y~., data=Data)
+```
+
+```{r}
+# forward selection
+step(regnull, scope=list(lower=regnull,upper=regfull), direction ="forward")
+```
+
+### 3 backward elimination
+
+```{r}
+step(regfull, scope=list(lower=regnull,upper=regfull),direction="backward")
+```
+
+### 4 stepwise regression
+```{r}
+step(regfull, scope=list(lower=regnull,upper=regfull),direction="both")
+
+```
+### 5 PRESS computation function
+```{r}
+compute_PRESS<- function(model){
+  h<- lm.influence(model)$hat
+  e<-residuals(model)
+  PRESS<- sum((e/(1-h))^2)
+  return(PRESS)
+}
+```
+
+
+### 6 applying PRESS
+```{r}
+model<-lm(y~x2+x7+x8, data = Data)
+PRESS_val<- compute_PRESS(model)
+PRESS_val
+```
+
+
+```{r}
+R2<- summary(model)$r.squared
+R2
+```
+```{r}
+summary(model)
+anova(model)
+```
+
+```{r}
+SST<-326.964
+R2_Pred<- 1- PRESS_val/SST
+R2_Pred
+R2
+```
+Values are close suggesting the model is a decent generalization of the model where we will likely not suffer from overfitting because it is smaller the R2 as expected, but not greatly so.
+
