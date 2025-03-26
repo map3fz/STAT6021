@@ -1,0 +1,45 @@
+---
+title: "Homework Set 7"
+author: "Michael Puchalski"
+date: "2025-03-18"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(datasets)
+library(GGally)
+data<-swiss
+```
+
+#### 1.
+
+(a) Fit a simple model using just education, catholic and infant.morality
+
+```{r}
+result<- lm(Fertility~., data=data)
+summary(result)
+```
+
+```{r}
+simple.result<-lm(Fertility~Education+Catholic+Infant.Mortality, data=data)
+anova(simple.result)
+```
+
+Based on the findings of this comparison, it would suggest that in this model these coefficients all have a significant test statistic as well as a significant P-value. and a highly significant p-value for the model as a whole
+
+```{r}
+summary(simple.result)
+```
+
+```{r}
+anova(simple.result, result)
+```
+
+Null Hypothesis: At least one of the coefficients from the full model is 0
+
+Alternate: none of these values are 1
+
+```{r}
+
+```
