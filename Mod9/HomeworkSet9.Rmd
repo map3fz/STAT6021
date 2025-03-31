@@ -73,4 +73,29 @@ The model selected by the forward selection is the model where Share changes in 
 
 ### 2(b)
 
-What this process does, is starting with a line of best fit for just the y-intercept and the points
+What this process does, is starting from the intercept-only model, it will increase the model 1 predictor at a time in an optimal way, until it has determined that adding another predictor to the model no longer improves it. In this scenario it is adding variables in the order that makes the the AIC (Akaike information criterion) value decrease the most for each step and continues to do so until the AIC no longer decreases. This measure helps increase the significance of a model while also taking steps to maintain a lower complexity model by adding penalty into the calculation for adding addition parameter.
+
+### 2(c)
+
+The advice I would have for the client is that while it is certainly an option available, I would be hesitant to make that decision before going through and checking other model selection values such as Mallow's C value and adjusted R squared. Along with this, the regression model will still need to be checked for linear regression assumptions before being deployed/utilized to interpret the current data or for forecasting.
+
+### 3.
+
+$R^2$ is a value that measures how much of the variance that you see from the response variable can be accounted for by the predictors as a simple and direct value for explaining the variability of a data set. However, when looking a multiple predictor models, it can be seen that as a predictor is added to the model, the $R^2$ value will either always increase or stay the same as a model with less predictors.
+
+This compares to the adj $R^2$ value which compensates for how many predictors are added to the model by giving a "penalty" for how many predictors are added to model. This means the model will not arbitrarily increase in adj $R^2$ value if an irrelevant variable is added to the model making the model one that is more statistically informative.
+
+### 4.
+
+Code for calculating the PRESS from the guided set statistic. Most of us had a code very similar to this.
+
+```{r}
+compute_PRESS<- function(model){
+  h<- lm.influence(model)$hat
+  e<-residuals(model)
+  PRESS<- sum((e/(1-h))^2)
+  return(PRESS)
+}
+```
+
+###  
