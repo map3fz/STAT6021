@@ -1,0 +1,76 @@
+---
+title: 'Stat 6021: Homework Set 9'
+author: "Michael Puchalski"
+date: "2025-03-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(MASS)
+library(leaps)
+```
+
+```{r}
+birthwt<-birthwt
+```
+
+### 1(a)
+
+Categorical variables: **low, race, smoke, ht, ui**
+
+It appears all are being viewed correctly as categorical variables, with every variable having a 0 or 1 that is a two-way categorical. To ensure the 3-way categorical variable "race" is viewed correctly, I am going to force it through factoring to ensure issues from previous use do not occur.
+
+```{r}
+birthwt$race <- factor(birthwt$race,
+                       levels = c(1, 2, 3)
+                       )
+```
+
+### 1(b)
+
+I agree with this as the variable low is not a predictor of the birth weight but instead a variable that is more likely used as a way to count how many met a certain criteria to be considered low. In other words, low is dependent on our response variable.
+
+### 1(c)
+
+```{r}
+allreg<-regsubsets(bwt ~.-low, data=birthwt, nbest=1)
+summary(allreg)
+```
+
+```{r}
+names(summary(allreg))
+```
+
+```{r}
+which.max(summary(allreg)$adjr2)
+which.min(summary(allreg)$cp)
+which.min(summary(allreg)$bic)
+```
+
+After dropping the categorical variable "low" as a predictor, the model that performs the best is model 5, giving the highest adjusted R squared as well as the lowest Mallow's and BIC values. This model includes lwt, race2 and race3, smoke, ht, and ui.
+
+```{r}
+#intercept only model
+regnull<-lm(bwt~1, data=birthwt)
+# all predictors except low
+regfull<-lm(bwt~. -low, data=birthwt)
+```
+
+```{r}
+step(regfull, scope=list(lower=regnull,upper=regfull), direction ="backward")
+```
+
+lwt, race, smoke, ht, and ui are the included predictors for the model that gives the best resulting AIC of 2452.79
+
+### 2(a)
+
+The model selected by the forward selection is the model where Share changes in response to discount, promo, and price which would exclude time as a predictor from this model.
+
+### 2(b)
+
+What this process does, is starting with a line of best fit for just the y-intercept and the points
