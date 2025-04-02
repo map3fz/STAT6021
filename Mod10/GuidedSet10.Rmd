@@ -3,3 +3,99 @@ title: "GuidedSet10"
 output: html_document
 ---
 
+```{r}
+library(tidyverse)
+library(ggplot2) # visuals
+library(MASS) # boxcox
+library(car) # partial regression plots
+Data<- read.table("nfl.txt", header=TRUE)
+options(scipen=10)
+```
+
+Setting up the model following work from Module 9
+```{r}
+model<-lm(y~x2+x7+x8, data = Data)
+plot(model)
+```
+
+Here the Residuals vs. Fitted plot is telling us that there is some unexplained variance due the curvature of the mean line, but relatively the errors are close to a mean of 0 suggesting likely both assumption 1 and 2 are reasonably met, but they can still be improved if needed. 
+
+Following that, our QQ plot suggests that it again is relatively okay as a predictor, but that there is potential for an outlier at the bottom end and maybe the top end of the plot.
+
+In the Leverage Plot, most samples are resonably close in distance with only 1 observation potentially creating an issue with it having a distance close to 0.4 in comparison to most of the observations being below 0.2, but it does not appear large enough to cause issue. 
+
+In Scale-Location, fo the most part this remains mostly consistent with maybe a slight decrease for standardized residuals which could likely be caused by the 0 win team in this data set.
+
+### 2 Partial Regression Plots
+
+```{r}
+avPlots(model)
+```
+
+x2 and x8 for the most part appear linear, with x8 appearing to reduce in variance as you move right and x2 appearing relatively linear. However, x7 seems to show an increase in the magnitude of the variance as we move right, while still remaining consistent in somewhat mirroring each end of the line. However, it still seems to follow a linear pattern. 
+
+### 3 & 4 externally Studentized residules for leverage and outliers
+
+```{r}
+hii<- lm.influence(model)$hat # leverages
+ext.student<- rstudent(model) # externalized student residuals
+n<- nrow(Data)
+p<- 4 # 4 parameters
+```
+
+comparing to relevent criteria
+
+```{r}
+hii[hii>2*p/n]
+```
+
+2 observations have high leverage, obs 18 and obs 27. 
+
+```{r}
+### Sorting Leverage
+sort(hii)
+```
+
+It appears obs 27 still has a higher leverage in relation to other obs.
+
+```{r}
+ext.student[abs(ext.student)>3]
+```
+Based on the outcome here, with the general rule if ti >3 it classifies an outlier
+
+```{r}
+sort(abs(ext.student))
+```
+
+This appears to check out in relation to all of the other tis as well with the only possible other determination being to cap it at 2 and leave obs 1 as an outlier.
+
+### 5. DFFITS, DFBETAS, and Cook's Distance
+
+```{r}
+betas <- dfbetas(model)
+betas
+```
+
+```{r}
+betas[27,]
+betas[18,]
+betas[21,]
+betas[10,]
+```
+Neither of the observations that showed to be high leverage observations resulted in being influential on the coefficients, instead observations 21 and 10 both showed to be influential on B2 and B3 respectively, both decreasing the coeffients if they are removed.
+
+```{r}
+FITS<-dffits(model)
+FITS
+2*sqrt(p/n)
+```
+
+No observation was found to be individually influential to the response variable.
+
+```{r}
+sort(cooks.distance(model))
+```
+
+No value for cook's distance is above 0.1, so no additional values are flagged as being influential to the model. 
+
+Overall, observations, 10 and 21 were found to be influential observations.
