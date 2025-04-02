@@ -65,7 +65,12 @@ regfull<-lm(bwt~. -low, data=birthwt)
 step(regfull, scope=list(lower=regnull,upper=regfull), direction ="backward")
 ```
 
-lwt, race, smoke, ht, and ui are the included predictors for the model that gives the best resulting AIC of 2452.79
+lwt, race, smoke, ht, and ui are the included predictors for the model that gives the best resulting AIC of 2452.79.
+
+```{r}
+model<-lm(formula = bwt ~ lwt + race + smoke + ht + ui, data = birthwt)
+summary(model)
+```
 
 ### 2(a)
 
@@ -77,7 +82,7 @@ What this process does, is starting from the intercept-only model, it will incre
 
 ### 2(c)
 
-The advice I would have for the client is that while it is certainly an option available, I would be hesitant to make that decision before going through and checking other model selection values such as Mallow's C value and adjusted R squared. Along with this, the regression model will still need to be checked for linear regression assumptions before being deployed/utilized to interpret the current data or for forecasting.
+The advice I would have for the client is that while it is certainly an option available, I would be hesitant to make that decision before going through and checking other model selection values such as Mallow's C value and adjusted R squared. Along with this, the regression model will still need to be checked for whether or not it meets linear regression assumptions before being deployed/utilized to interpret the current data or for forecasting.
 
 ### 3.
 
