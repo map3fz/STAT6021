@@ -21,15 +21,17 @@ Data<- read.table("nfl.txt", header=T)
 allreg<-regsubsets(y ~., data=Data, nbest=2)
 summary(allreg)
 ```
+
 Based on R2, best model for 1-predictors is that with x8 as the 1-predictor with the second best being that with x1.
+
 ```{r}
 names(summary(allreg))
 ```
 
-
 ```{r}
 which.max(summary(allreg)$adjr2)
 ```
+
 ```{r}
 which.min(summary(allreg)$cp)
 ```
@@ -39,6 +41,7 @@ which.min(summary(allreg)$bic)
 ```
 
 ### 2 forward elimination
+
 ```{r}
 #intercept only model
 regnull<-lm(y~1, data=Data)
@@ -58,13 +61,16 @@ step(regfull, scope=list(lower=regnull,upper=regfull),direction="backward")
 ```
 
 ### 4 stepwise regression
+
 ```{r}
 step(regfull, scope=list(lower=regnull,upper=regfull),direction="both")
 
 ```
+
 ### 5 PRESS computation function
+
 ```{r}
-compute_PRESS<- function(model){
+PRESS<- function(model){
   h<- lm.influence(model)$hat
   e<-residuals(model)
   PRESS<- sum((e/(1-h))^2)
@@ -72,19 +78,19 @@ compute_PRESS<- function(model){
 }
 ```
 
-
 ### 6 applying PRESS
+
 ```{r}
 model<-lm(y~x2+x7+x8, data = Data)
-PRESS_val<- compute_PRESS(model)
+PRESS_val<- PRESS(model)
 PRESS_val
 ```
-
 
 ```{r}
 R2<- summary(model)$r.squared
 R2
 ```
+
 ```{r}
 summary(model)
 anova(model)
@@ -96,5 +102,14 @@ R2_Pred<- 1- PRESS_val/SST
 R2_Pred
 R2
 ```
-Values are close suggesting the model is a decent generalization of the model where we will likely not suffer from overfitting because it is smaller the R2 as expected, but not greatly so.
 
+Values are close suggesting the model is a decent generalization of the model where we will likely not suffer from over fitting because it is smaller the R2 as expected, but not greatly so.
+
+```{r}
+# Generate diagnostic plots
+par(mfrow = c(2, 2))  # Set up a 2x2 plotting layout
+plot(model)
+
+```
+
+It appears these plots are indicating we have a somewhat reasonable model with the residuals vs fitted plot seeming to fit the assumptions of homoscedasticity and normality. The Q-Q plot is also showing a somewhat linear relationship suggesting normality. The scale location plot is showing a somewhat random distribution of points suggesting homoscedasticity. The residuals vs leverage plot is showing no points with high leverage suggesting minimal outliers for the model.
