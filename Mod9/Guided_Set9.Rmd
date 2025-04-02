@@ -103,6 +103,7 @@ R2_Pred
 R2
 ```
 
+<<<<<<< HEAD
 Values are close suggesting the model is a decent generalization of the model where we will likely not suffer from over fitting because it is smaller the R2 as expected, but not greatly so.
 
 ```{r}
@@ -113,3 +114,6 @@ plot(model)
 ```
 
 It appears these plots are indicating we have a somewhat reasonable model with the residuals vs fitted plot seeming to fit the assumptions of homoscedasticity and normality. The Q-Q plot is also showing a somewhat linear relationship suggesting normality. The scale location plot is showing a somewhat random distribution of points suggesting homoscedasticity. The residuals vs leverage plot is showing no points with high leverage suggesting minimal outliers for the model.
+=======
+trying to Commit
+>>>>>>> 2efc948404f40c98e5dd0ad9d848455fdeaf01b6

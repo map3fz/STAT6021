@@ -1,0 +1,106 @@
+---
+title: 'Stat 6021: Homework Set 9'
+author: "Michael Puchalski"
+date: "2025-03-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(MASS)
+library(leaps)
+```
+
+```{r}
+birthwt<-birthwt
+```
+
+### 1(a)
+
+Categorical variables: **low, race, smoke, ht, ui**
+
+It appears all are being viewed correctly as categorical variables, with every variable having a 0 or 1 that is a two-way categorical. To ensure the 3-way categorical variable "race" is viewed correctly, I am going to force it through factoring to ensure issues from previous use do not occur.
+
+```{r}
+birthwt$race <- factor(birthwt$race,
+                       levels = c(1, 2, 3)
+                       )
+```
+
+### 1(b)
+
+I agree with this as the variable low is not a predictor of the birth weight but instead a variable that is more likely used as a way to count how many met a certain criteria to be considered low. In other words, low is dependent on our response variable.
+
+### 1(c)
+
+```{r}
+allreg<-regsubsets(bwt ~.-low, data=birthwt, nbest=1)
+summary(allreg)
+```
+
+```{r}
+names(summary(allreg))
+```
+
+```{r}
+which.max(summary(allreg)$adjr2)
+which.min(summary(allreg)$cp)
+which.min(summary(allreg)$bic)
+```
+
+After dropping the categorical variable "low" as a predictor, the model that performs the best is model 5, giving the highest adjusted R squared as well as the lowest Mallow's and BIC values. This model includes lwt, race2 and race3, smoke, ht, and ui.
+
+```{r}
+#intercept only model
+regnull<-lm(bwt~1, data=birthwt)
+# all predictors except low
+regfull<-lm(bwt~. -low, data=birthwt)
+```
+
+```{r}
+step(regfull, scope=list(lower=regnull,upper=regfull), direction ="backward")
+```
+
+lwt, race, smoke, ht, and ui are the included predictors for the model that gives the best resulting AIC of 2452.79.
+
+```{r}
+model<-lm(formula = bwt ~ lwt + race + smoke + ht + ui, data = birthwt)
+summary(model)
+```
+
+### 2(a)
+
+The model selected by the forward selection is the model where Share changes in response to discount, promo, and price which would exclude time as a predictor from this model.
+
+### 2(b)
+
+What this process does, is starting from the intercept-only model, it will increase the model 1 predictor at a time in an optimal way, until it has determined that adding another predictor to the model no longer improves it. In this scenario it is adding variables in the order that makes the the AIC (Akaike information criterion) value decrease the most for each step and continues to do so until the AIC no longer decreases. This measure helps increase the significance of a model while also taking steps to maintain a lower complexity model by adding penalty into the calculation for adding addition parameter.
+
+### 2(c)
+
+The advice I would have for the client is that while it is certainly an option available, I would be hesitant to make that decision before going through and checking other model selection values such as Mallow's C value and adjusted R squared. Along with this, the regression model will still need to be checked for whether or not it meets linear regression assumptions before being deployed/utilized to interpret the current data or for forecasting.
+
+### 3.
+
+$R^2$ is a value that measures how much of the variance that you see from the response variable can be accounted for by the predictors as a simple and direct value for explaining the variability of a data set. However, when looking a multiple predictor models, it can be seen that as a predictor is added to the model, the $R^2$ value will either always increase or stay the same as a model with less predictors.
+
+This compares to the adj $R^2$ value which compensates for how many predictors are added to the model by giving a "penalty" for how many predictors are added to model. This means the model will not arbitrarily increase in adj $R^2$ value if an irrelevant variable is added to the model making the model one that is more statistically informative.
+
+### 4.
+
+Code for calculating the PRESS from the guided set statistic. Most of us had a code very similar to this.
+
+```{r}
+compute_PRESS<- function(model){
+  h<- lm.influence(model)$hat
+  e<-residuals(model)
+  PRESS<- sum((e/(1-h))^2)
+  return(PRESS)
+}
+```
+
+###  
