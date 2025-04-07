@@ -8,6 +8,7 @@ library(tidyverse)
 library(ggplot2) # visuals
 library(MASS) # boxcox
 library(car) # partial regression plots
+library(leaps)
 Data<- read.table("nfl.txt", header=TRUE)
 options(scipen=10)
 ```
