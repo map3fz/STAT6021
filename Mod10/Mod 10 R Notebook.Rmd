@@ -1,0 +1,92 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(datasets)
+library(MASS)
+library(car)
+library(leaps)
+swiss<-swiss
+```
+
+
+### Question 1
+In this question, you will revisit the swiss data set that you worked on in Homeworks 6 and 7. The data set contains information regarding a standardized fertility measure and socio-economic indictors for each of the 47 French-speaking provinces of Switzerland around the year 1888. In Homework 5, you found that the model with just three predictors: Education, Catholic, and Infant Mortality was preferred to a model with all the predictors. Fit the model with the three predictors, and answer the following questions.
+
+```{r}
+mlr<-lm(Fertility ~ Education + Catholic + Infant.Mortality, data=swiss)
+```
+
+
+#### A
+Are there any outlier observations?
+
+Plotting the residual plots as well as individual variable plots for a better visualization of what is going on with the data.
+
+```{r}
+plot(mlr)
+```
+
+```{r}
+avPlots(mlr)
+```
+
+```{r}
+##externally studentized variables for leverage and outliers
+hii<- lm.influence(mlr)$hat # leverages
+ext.student<- rstudent(mlr) # externalized student residuals
+n<- nrow(swiss)
+p<- 4 # 4 total parameters
+```
+
+Theses will allow us to begin assessing for leverage and outliers
+
+```{r}
+sort(ext.student[abs(ext.student)])
+```
+
+In general, an observation is classified as an outlier when |ti|>3, none of these observations meet the critera
+
+```{r}
+sort(abs(cooks.distance(mlr))>=1)
+```
+Following this, no data falls under the category of having a cook's distance greater than 1, another general rule that would say that a observation has undue influence over the model maybe suggesting it to be an outlier.
+
+
+#### B
+
+```{r}
+##comparing data to look for high leverage 
+hii[hii>2*p/n]
+```
+
+2 observations have high leverage, those from La Vallee V. and Fe Geneve.
+
+```{r}
+sort(hii)
+```
+These observations are both quite a bit higher than the next closest ones; however, I would assert that De Geneve has higher leverage on the model than La Vallee V.
+
+#### C
+```{r}
+### measuring for observational influence based on DFFITS
+fits<-dffits(mlr)
+sort(abs(fits) >= 2*sqrt(p/n))
+```
+
+Based on the outcome of DFFITS there are 3 influential observations:
+- Porrentruy
+- Sierre
+- Rive Gauche
+
+Following this, as shown in part of the support for the answer for question 1, there are no observations classified as influential according to Cook's Distance.
+
+#### D
+The difference between the evaluation of Influence based on DFFITS and Cook's Distance is one (DFFITS) measures the influence an observation has on its own fitted value, and how many standard errors the fitted value changes with this observation being removed from the calculation of the model. Cook's Distance instead measures the Euclidean distance squared, the distance when graphed, between the vector of the fitted values with an without a specific observation. In simpler terms, it compares the slope in relative graphed space and how different the square of these distances are with and without an observation in turn measuring the influence of that value on all fitted values rather than just its influence on its own point. 
+
+
+
+
