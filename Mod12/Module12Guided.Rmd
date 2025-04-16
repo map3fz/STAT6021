@@ -1,0 +1,78 @@
+---
+title: "Module12Guided"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(faraway)
+library(ROCR)
+df<- wcgs
+
+set.seed(6021)
+```
+
+
+```{r}
+sample.data<-sample.int(nrow(df), floor(0.5*nrow(df)), replace = F)
+train<-df[sample.data,]
+test<-df[-sample.data,]
+
+model<- glm(chd~age+sdp+cigs+dibep, family=binomial, data=train)
+
+summary(model)
+```
+This model suggests that all behaviors outside of dibebB will increase one's log odds of having coronary heart disease with each unit increase when controlling for other variables. with dibep B only decreasing log odds by 0.5318*1 when behavior B is displayed.
+
+### 2
+```{r}
+preds<- predict(model, newdata=test, type="response")
+
+```
+
+```{r}
+rates<-ROCR::prediction(preds, test$chd)
+
+roc_result<- ROCR::performance(rates,measure="tpr", x.measure="fpr")
+
+plot(roc_result, main = "ROC Curve for Log Model")
+lines(x=c(0,1), y = c(0,1), col="red")
+```
+
+This curve tells us that other than on the extreme ends of the model, the model performs better than randomly guessing by being above the 50-50 line for essentially the whole plot
+
+### 3
+```{r}
+auc<- ROCR::performance(rates, measure = "auc")
+auc@y.values
+```
+
+The AUC value agrees with my own visual conclusion that the ROC curve performs better than random guessing
+
+### 4
+
+```{r}
+table(test$chd, preds>0.5)
+```
+
+This would suggest that I need to lower my threshold as I am not getting in True negatives nor am I getting any true positives from this output, instead I am getting a 2x1 matrix where every outcome is False.
+
+### 5
+I think in this case I would disagree, the Matrix is giving an output where the FPR and FNR = 1 meaning that all outcomes from the model at this threshold are wrong. making it perform worse than random guessing.
+
+### 6 
+The threshold should be lowered. This will allow for the model to predict that patients have chd. With coronary heart disease the model should have a certain degree of sensitivity due to the risk it puts on a life that using these measurements we would want their risk factor to be caught and allowing for them to then be checked by a professional. However, to a degree you will want to cap this sensitivity to streamline patient care if this were a screening survey for potential risk populations and not make them end up having to test every patient they see. 
+
+### 7
+```{r}
+summary(preds)
+```
+```{r}
+table(test$chd, preds>0.04312)
+```
+accuracy-> 75.02%
+FPR-> 0.562%
+TPR-> 23.92% *clearly can improve* probably closer to minimum threshold
+
+### 8
+I think what is happening is like with much of medical screening this test needs to be HIGHLY sensitive

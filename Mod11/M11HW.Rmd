@@ -1,0 +1,161 @@
+---
+title: "M11HW"
+output:
+  html_document: default
+  pdf_document: default
+---
+### Question 1 set up
+```{r}
+library(palmerpenguins)
+library(tidyverse)
+library(gridExtra)
+options(scipen=999)
+
+Data<- penguins
+## removing penguins with no gender specified and columns 2 through 8
+Data<-Data[complete.cases(Data[,7]),-c(2,8)]
+##80-20 split
+set.seed(1) ##Always set a seed for reproduceable results
+sample<-sample.int(nrow(Data), floor(.80*nrow(Data)), replace = F)
+train<-Data[sample,] ##training data frame
+test<-Data[-sample,] ##test data frame
+```
+
+##### 1(a) visualizations exploring relationship of measurements and gender
+```{r}
+##Setting up BoxPlots by giving them a variable name, allows them to be callable and allows them to be placed into a grid
+
+bp1<-ggplot(train, aes(x=sex, y=bill_length_mm))+
+  geom_boxplot()+
+  labs(x="Sex", y="Bill Length (mm)", title= "Bill Length by Sex")
+
+bp2<-ggplot(train, aes(x=sex, y= bill_depth_mm))+
+  geom_boxplot()+
+  labs(x="Sex", y="Bill Depth (mm)", title= "Bill Depth by Sex")
+
+bp3<-ggplot(train, aes(x=sex, y=flipper_length_mm))+
+  geom_boxplot()+
+  labs(x="Sex", y="Flipper Length (mm)", title= "Flipper Length by Sex")
+
+bp4<-ggplot(train, aes(x=sex, y=body_mass_g))+
+  geom_boxplot()+
+  labs(x="Sex", y="Body Mass (g)", title= "Body Mass by Sex")
+
+## function allows for the 4 box plots to be put in a 2 by 2 matrix
+grid.arrange(bp1,bp2,bp3,bp4, ncol = 2, nrow =2)
+```
+
+Based on these box plots, it become rather evident that with at least relative confidence from a visual stance, you can make an assertion that each physical measurement is increased in males, having a sex based dependency.
+
+```{r}
+## Setting up density plots of penguin size measurements
+dp1<-ggplot(train,aes(x=bill_length_mm, color=sex))+
+  geom_density()+
+  labs(title="Bill Length by Sex")
+
+dp2<-ggplot(train,aes(x=bill_depth_mm, color=sex))+
+  geom_density()+
+  labs(title="Bill Depth by Sex")
+
+dp3<-ggplot(train,aes(x=flipper_length_mm, color=sex))+
+  geom_density()+
+  labs(title="Flipper Length by Sex")
+
+dp4<-ggplot(train,aes(x=body_mass_g, color=sex))+
+  geom_density()+
+  labs(title="Body Mass by Sex")
+
+grid.arrange(dp1,dp2,dp3,dp4, ncol=2, nrow=)
+
+```
+
+Looking at these plots, you see marginal densities across every single display with the largest available densities coming in Bill Depth.These densitiy measurements are definitely impacted by the changes in range of each measurements metric with some being by the thousands while others are in chunks of 5 units at a time.
+
+However, we do see consistent patterns where there appears to more higher presence at certain measurement ranges for female penguins and certain measurement ranges that are more common for male penguins. 
+
+#### 1(b-c) Fitting a logistic model and using the Wald test for coefficients
+```{r}
+result<- glm(sex~., family = "binomial", data = train)
+## Including Species to be able to control for species in the model
+summary(result)
+```
+
+Wald Test: Z = estimate/standard error(estimate)
+
+flipper: Z = -0.088318/0.65040, = -0.1357, large P-value, remove this metric Accepting the hypothesis the estimate = 0/ could = 0 so removing from the model
+
+Cannot determine further changes until a refit is completed.
+
+```{r}
+result2<- glm(sex~.-flipper_length_mm, family = "binomial", data = train)
+## Removed flipper length from model and refitting to evaluate further variables
+summary(result2)
+```
+This is a reasonable model to not run a walds test on at the moment as the p-values for each estimate are much lower than 0.05.
+
+Logistic Regression Equation: 
+
+log(pihat/(1-pihat)) = -103.223 + 0.9513*bill_length* + 2.0991*bill_depth* + 0.0077*body_mass* - 10.4216*I1* -12.3849*I2*
+
+where:
+I1 is 1 for Chinstrap penguins and 0 for all other species
+and
+I2 is 1 for Gentoo Penguins and 0 for all other species.
+
+#### 1(d) how do you interpret the regression equation
+Generally, as these predictors increase in their respective units, the log odds of the penguin being a male increases by the amount described by their coefficient when controlling for species and other variables.
+
+#### 1(e) interpret esitmate for bill length
+
+**For every millimeter of bill length, the log odds of that penguin being male increases, when controlling for all other variables and species, by 0.9513, while the estimated odds are increased by a factor of 2.589073 times for each additional mm.**
+
+*Accidentally interpreted them all before I red the question*
+
+Based on this equation, it appears that bill_depth is going to be the strongest indicator for if a penguin, when controlling for species and other variables, is male or female, with higher values for this predictor making it more likely to be male, something we can extrapolate using the regression combined with the visualizations in which males tended to be larger. Meaning that the log odds of this value increases by 2.0991 for each additional mm bill depth increase when controlling for all other variables.
+
+This pattern can also be followed with bill length and body mass with the log odds increasing by 0.9513 and 0.0077 per unit increase respectively. 
+
+In other words, the estimated odds of a penguin being male increases by a factor of 8.1588, 2.5891, and 1.077 with respect to the order they are interpreted in this description when controlling for the other variables for each one.
+
+#### 1(f) Make a prediction about the log-odds, odds, and probability of a Gentoo penguin's sex
+
+```{r}
+levels(Data$species)
+```
+
+```{r}
+new_gentoo<-data.frame(bill_depth_mm=15, bill_length_mm=49, body_mass_g=5700, flipper_length_mm=220, species="Gentoo")
+
+##making prediction for log odds
+log_odds<-predict(result2,new_gentoo)
+log_odds
+```
+
+```{r}
+## prediction for odds
+odds<- exp(log_odds)
+odds
+```
+
+```{r}
+prob<- odds/(1+odds)
+prob
+```
+
+Based on the outcomes from the model, the log odds are 6.46... times more likely to be a male, with the odds being 640.7683 to 1 that this is a male, meaing it is most likely a male, at a probability of 99.84...% that this penguin is a Gentoo male penguin.
+
+#### 1(f) conducting a hypothesis test to assess how useful the logistic regression is
+
+```{r}
+##likelihood ratio test
+deltaG2<- result2$null.deviance-result2$deviance
+deltaG2
+```
+
+```{r}
+1-pchisq(deltaG2, 5) # df = 5 including species to go from full model to null reduced model, unsure if this value should actually be, but same answer both ways.
+```
+Null: at least one of the coefficients = 0
+Alternative: none of the coefficients = 0
+
+with a test statistic 298.4472, the p-value is 0, so we reject the null and assert that the 4 predictor model is significantly more useful than the intercept model and assert that at least one of the coefficients is a nonzero.
